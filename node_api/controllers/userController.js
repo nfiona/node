@@ -23,7 +23,7 @@ module.exports = function(server) {
 
     // *** HTTP Method GET - retreive particular user  ***
     server.get("/user/:id", function(req,res,next) {
-      // *** activate restify-validator
+      // *** activate restify-validator, require correct id.
         req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
         var errors = req.validationErrors();
         if (errors) {
@@ -43,6 +43,15 @@ module.exports = function(server) {
 
     // *** HTTP Method POST - add a user  ***
     server.post("/user", function(req, res, next) {
+      // *** input validation for all properties in each object params.
+      req.assert('first_name', "First name is required").notEmpty();
+      req.assert('last_name', "Last name is required").notEmpty();
+      req.assert('email_address', "Email address is required and must be a valid email").notEmpty().isEmail();
+      req.assert('career', "Career is required. Must be either student, teacher, or professor").isIn(["student","teacher","professor"]);
+      var errors = req.validationErrors();
+      if (errors) {
+        helpers.failure(res, next, errors, 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+      }
       // ** the http request that comes in will define our new user
       var user = req.params;
       // ** increment user.
@@ -60,6 +69,12 @@ module.exports = function(server) {
 
     // *** HTTP Method PUT - update a user ***
     server.put("/user/:id", function(req,res,next) {
+      // *** validation, require correct id.
+      req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
+      var errors = req.validationErrors();
+      if (errors) {
+        helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+      }
       // set error message for non-existance user id - 404 is code for error.
       if (typeof(users[req.params.id]) === 'undefined') {
         helpers.failure(res, next, "The specified user id does not exist.", 404);
@@ -82,6 +97,12 @@ module.exports = function(server) {
 
     // *** HTTP Method DELETE - delete particular user ***
     server.del("/user/:id", function(req,res,next) {
+      // *** validation, require correct id
+      req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
+      var errors = req.validationErrors();
+      if (errors) {
+        helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+      }
       // set error message for non-existance user id - 404 is code for error.
       if (typeof(users[req.params.id]) === 'undefined') {
         helpers.failure(res, next, "The specified user id does not exist.", 404);
