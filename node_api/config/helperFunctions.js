@@ -5,12 +5,12 @@
 // *** DRY-ing repetitive API calls Methods by using functions
 // *** Local function ("_")
 function _respond(res, next, status, data, http_code) {
-  // res
+
   var response = {
     'status': status,
     'data': data
   };
-  // data
+  // res & data
   res.setHeader('content-type','application/json');
   // status & http_code
   res.writeHead(http_code);

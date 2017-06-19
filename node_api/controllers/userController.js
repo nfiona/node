@@ -23,6 +23,12 @@ module.exports = function(server) {
 
     // *** HTTP Method GET - retreive particular user  ***
     server.get("/user/:id", function(req,res,next) {
+      // *** activate restify-validator
+        req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
+        var errors = req.validationErrors();
+        if (errors) {
+          helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+        }
       // set error message for non-existance user id - 404 is code for error.
       if (typeof(users[req.params.id]) === 'undefined') {
         helpers.failure(res, next, "The specified user id does not exist.", 404);

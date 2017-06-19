@@ -1,16 +1,14 @@
 
-// ***************************************************************************************************************
-//                                                SERVER
-// ***************************************************************************************************************
 // *** Connect to 'restify' package in '/node_modules/restify'
 var restify = require('restify');
 // *** Create local server
 var server = restify.createServer();
-// *** Import external files
+// *** Import external files & plugins
 var setupController = require('./controllers/setupController.js');
 var userController = require('./controllers/userController.js');
-// *** Define functions from the above external files
-setupController(server,restify);
+var restifyValidator = require('restify-validator');
+// *** Define functions from the above external files & plugins
+setupController(server, restify, restifyValidator);
 userController(server);
 
 server.listen(8080, function() {
