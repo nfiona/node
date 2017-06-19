@@ -7,8 +7,8 @@ var server = restify.createServer();
 var setupController = require('./controllers/setupController.js');
 var userController = require('./controllers/userController.js');
 var restifyValidator = require('restify-validator');
-var config = require("./config/dbConnections.js")
 // connecting to MongoDB (MLab) with mongoose.
+var config = require("./config/dbConnections.js")
 var mongoose = require('mongoose');
 mongoose.connect(config.getMongoConnection());
 // *** Define functions from the above external files & plugins

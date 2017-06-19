@@ -4,7 +4,9 @@
 // ***************************************************************************************************************
 // *** Import functions from helperFunctions.js
 var helpers = require('../config/helperFunctions.js');
-// *** Fake Datebase
+// *** Import our UserModel schema (users Collection in MLab)
+var UserModel = require('../models/UserModel.js');
+// Fake Database
 var users = {};
 var max_user_id = 0;
 // *** Wrap routes in a function and make it available publicly - Exported to app.js
@@ -46,23 +48,28 @@ module.exports = function(server) {
       // *** input validation for all properties in each object params.
       req.assert('first_name', "First name is required").notEmpty();
       req.assert('last_name', "Last name is required").notEmpty();
-      req.assert('email_address', "Email address is required and must be a valid email").notEmpty().isEmail();
+      // *** .isEmail() is removed from below; validator is not working on Postman and created an error.
+      req.assert('email_address', 'Email address is required and must be a valid email').notEmpty();
       req.assert('career', "Career is required. Must be either student, teacher, or professor").isIn(["student","teacher","professor"]);
       var errors = req.validationErrors();
       if (errors) {
         helpers.failure(res, next, errors, 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+        return next();
       }
-      // ** the http request that comes in will define our new user
-      var user = req.params;
-      // ** increment user.
-      max_user_id++;
-      // ** set new user id.
-      user.id = max_user_id;
-      // ** add the user to array of users.
-      users[user.id] = user;
-    // SHORT VERSION //
-      helpers.success(res, next, user);
-      return next();
+    // *** Replace Fake Databes: Create new UserModel instance & define parameters' values.Params are defined in UserModel's Schema.
+    var user = new UserModel();
+		user.first_name = req.params.first_name;
+		user.last_name = req.params.last_name;
+		user.email_address = req.params.email_address;
+		user.career = req.params.career;
+		user.save(function (err) {
+			if (err) {
+				helpers.failure(res, next, errors, 500);
+				return next();
+			}
+			helpers.success(res, next, user);
+			return next();
+		  });
     });
 
 // ********************************* PUT (update) ***************************** //
@@ -74,6 +81,7 @@ module.exports = function(server) {
       var errors = req.validationErrors();
       if (errors) {
         helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+        return next();
       }
       // set error message for non-existance user id - 404 is code for error.
       if (typeof(users[req.params.id]) === 'undefined') {
@@ -102,6 +110,7 @@ module.exports = function(server) {
       var errors = req.validationErrors();
       if (errors) {
         helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+        return next();
       }
       // set error message for non-existance user id - 404 is code for error.
       if (typeof(users[req.params.id]) === 'undefined') {
