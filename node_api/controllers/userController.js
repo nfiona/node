@@ -16,29 +16,36 @@ module.exports = function(server) {
 
     // *** HTTP Method GET - retreive all users  ***
     server.get("/", function(req,res,next) {
-    // SHORT VERSION (use function)//
-      helpers.success(res, next, users);
-      return next();
+    // ** get users from datas posted on MongoDB (copied code from npmjs.com/mongoose)
+      UserModel.find({}, function (err, users) {
+        // SHORT VERSION (use function)//
+          helpers.success(res, next, users);
+        });
     });
 
 // **************************** GET (one user) ******************************* //
 
     // *** HTTP Method GET - retreive particular user  ***
     server.get("/user/:id", function(req,res,next) {
-      // *** activate restify-validator, require correct id.
-        req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
-        var errors = req.validationErrors();
-        if (errors) {
-          helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
-        }
-      // set error message for non-existance user id - 404 is code for error.
-      if (typeof(users[req.params.id]) === 'undefined') {
-        helpers.failure(res, next, "The specified user id does not exist.", 404);
-        return next();
-      }
-    //  SHORT VERSION //
-      helpers.success(res, next, users[parseInt(req.params.id)]);
-      return next();
+          // *** activate restify-validator, require input.
+          req.assert('id', "Id is required").notEmpty();
+          var errors = req.validationErrors();
+          if (errors) {
+            helpers.failure(res, next, errors, 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+          }
+        // ** get users from datas posted on MongoDB (copied code from npmjs.com/mongoose)
+        UserModel.findOne({ _id: req.params.id }, function (err, user) {
+          if(err) {
+          helpers.failure(res, next, "Something went wrong when fetching the user", 500);
+          }
+          // set error message for non-existance user id - 404 is code for error.
+          if (user === null) {
+          helpers.failure(res, next, "The specified user id does not exist.", 404);
+          }
+          // if no error:
+          helpers.success(res, next, user);
+      });
+
     });
 
 // ******************************* POST (create)****************************** //
