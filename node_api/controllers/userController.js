@@ -6,9 +6,7 @@
 var helpers = require('../config/helperFunctions.js');
 // *** Import our UserModel schema (users Collection in MLab)
 var UserModel = require('../models/UserModel.js');
-// Fake Database
-var users = {};
-var max_user_id = 0;
+
 // *** Wrap routes in a function and make it available publicly - Exported to app.js
 module.exports = function(server) {
 
@@ -63,20 +61,20 @@ module.exports = function(server) {
         helpers.failure(res, next, errors, 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
         return next();
       }
-    // *** Replace Fake Databes: Create new UserModel instance & define parameters' values.Params are defined in UserModel's Schema.
-    var user = new UserModel();
-		user.first_name = req.params.first_name;
-		user.last_name = req.params.last_name;
-		user.email_address = req.params.email_address;
-		user.career = req.params.career;
-		user.save(function (err) {
-			if (err) {
-				helpers.failure(res, next, errors, 500);
-				return next();
-			}
-			helpers.success(res, next, user);
-			return next();
-		  });
+      // *** Replace Fake Databes: Create new UserModel instance & define parameters' values.Params are defined in UserModel's Schema.
+      var user = new UserModel();
+  		user.first_name = req.params.first_name;
+  		user.last_name = req.params.last_name;
+  		user.email_address = req.params.email_address;
+  		user.career = req.params.career;
+  		user.save(function (err) {
+  			if (err) {
+  				helpers.failure(res, next, errors, 500);
+  				return next();
+  			}
+  			helpers.success(res, next, user);
+  			return next();
+  		  });
     });
 
 // ********************************* PUT (update) ***************************** //
@@ -84,28 +82,36 @@ module.exports = function(server) {
     // *** HTTP Method PUT - update a user ***
     server.put("/user/:id", function(req,res,next) {
       // *** validation, require correct id.
-      req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
+      req.assert('id', "Id is required and must be numeric").notEmpty();
       var errors = req.validationErrors();
       if (errors) {
-        helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
+        helpers.failure(res, next, errors, 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
         return next();
       }
-      // set error message for non-existance user id - 404 is code for error.
-      if (typeof(users[req.params.id]) === 'undefined') {
-        helpers.failure(res, next, "The specified user id does not exist.", 404);
-        return next();
-      }
-      // ** set "user" as requested user.
-      var user = users[parseInt(req.params.id)];
-      // ** set the updated user's params in "updates" object.
-      var updates = req.params;
-      // ** loop through each user property and update old user data with new data.
-      for (var field in updates) {
-        user[field] = updates[field];
-      }
-      // SHORT VERSION  //
-      helpers.success(res, next, user);
-      return next();
+      // Find single user
+      UserModel.findOne({ _id: req.params.id }, function (err, user) {
+          if(err) {
+             helpers.failure(res, next, "Something went wrong when fetching the user", 500);
+          }
+          // set error message for non-existance user id - 404 is code for error.
+          if (user === null) {
+              helpers.failure(res, next, "The specified user id does not exist.", 404);
+          }
+          // after we check the specified user can be found, set the updated user's params in "updates" object.
+          var updates = req.params;
+          // id is passed in, don't override
+          delete updates.id;
+          // ** loop through each user property and update old user data with new data.
+          for (var field in updates) {
+              user[field] = updates[field];
+          }
+          // if error:
+          user.save(function (err) {
+      			 helpers.failure(res, next, errors, 500);
+          // if no error:
+          });
+          helpers.success(res, next, user);
+      });
     });
 
 // ******************************* DELETE ************************************ //
@@ -113,22 +119,28 @@ module.exports = function(server) {
     // *** HTTP Method DELETE - delete particular user ***
     server.del("/user/:id", function(req,res,next) {
       // *** validation, require correct id
-      req.assert('id', "Id is required and must be numeric").notEmpty().isInt();
+      req.assert('id', "Id is required and must be numeric").notEmpty();
       var errors = req.validationErrors();
       if (errors) {
-        helpers.failure(res, next, errors[0], 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
-        return next();
+        helpers.failure(res, next, errors, 400); // Show first error if there are multiple errors. 400 error code: fields are  not passed-in correctly.
       }
-      // set error message for non-existance user id - 404 is code for error.
-      if (typeof(users[req.params.id]) === 'undefined') {
-        helpers.failure(res, next, "The specified user id does not exist.", 404);
-        return next();
-      }
-      // ** delete requested user
-      delete users[parseInt(req.params.id)];
-      //  SHORT VERSION  //
-      helpers.success(res, next, []);
-      return next();
+
+      UserModel.findOne({ _id: req.params.id }, function (err, user) {
+          if(err) {
+             helpers.failure(res, next, "Something went wrong when fetching the user", 500);
+          }
+          // set error message for non-existance user id - 404 is code for error.
+          if (user === null) {
+              helpers.failure(res, next, "The specified user id does not exist.", 404);
+          }
+          // after we check the specified user can be found, remove/ delete user.
+          // if error:
+          user.remove(function (err) {
+      			 helpers.failure(res, next, "Error removing user from database", 500);
+          });
+          // if no error:
+          helpers.success(res, next, []);
+      });
     });
 
 }
