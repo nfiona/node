@@ -31,4 +31,22 @@ module.exports = function(server, restify, restifyValidator) {
     }
     return next();
   })
+
+  // IP Whitelisting - Extra layer of Authentication
+  server.use(function(req, res, next) {
+    var whitelistIps = ['111.222.333.444']
+    // the below header is standard http request & connection.
+    var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    // condition: if ip doesn't match
+    if (whitelistIps.indexOf(ip) === -1) {
+      var response = {
+        "status": "failure",
+        "data": "Invalid IP Address"
+      }
+      res.setHeader('content-type','application/json');
+      res.writeHead(http_code); // forbidden error code.
+      res.end(JSON.stringify(response));
+    }
+    return next();
+  })
 }
