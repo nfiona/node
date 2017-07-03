@@ -49,4 +49,11 @@ module.exports = function(server, restify, restifyValidator) {
     }
     return next();
   })
+
+  // API Throttling - restify 
+  server.use(restify.throttle( {
+    rate: 1,
+    burst: 2,
+    xff: true
+  }))
 }
